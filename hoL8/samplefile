@@ -1,0 +1,1 @@
+An "inode" is a data structure in a Unix-like file system that stores metadata about a file. It stands for "index node." Inodes are crucial for the organization and management of files on a storage device such as a hard drive or SSD.
