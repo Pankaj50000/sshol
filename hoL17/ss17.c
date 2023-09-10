@@ -1,35 +1,39 @@
+#include<stdio.h>
 #include<fcntl.h>
 #include<unistd.h>
-#include<stdio.h>
-int main()
-{
-	int fd=open("ticketfile",O_EXCL|O_RDWR);
-	struct flock lock;
-	lock.l_type=F_WRLCK;
-	lock.l_whence=SEEK_SET;
-	lock.l_start=0;
-	lock.l_len=2;
-	lock.l_pid=getpid();
-	int l=fcntl(fd,F_SETLKW,&lock);
-	char buff[3]={'0','0','\0'};
-	read(fd,buff,2);
-	int available=(buff[0]-'0')*10+(buff[1]-'0');
-	if(available>0)
-	{
-		printf("press enter to confirm\n");
-		getchar();
-		available--;
-		buff[0]='0'+(available/10);
-		buff[1]='0'+(available%10);
-		lseek(fd,0,SEEK_SET);
-		write(fd,buff,2);
-		lock.l_type=F_UNLCK;
-		fcntl(fd,F_SETLKW,&lock);
-		printf("Ticket number %d booked\n",available+1);
+#include<string.h>
+
+int main(void) {
+	struct flock fl;
+	int fd = open("train", O_RDWR);
+	if (fd == -1) {
+		printf("Error");
+		return 0;
 	}
-	else
-	{
-		printf("tickets not available\n");
-	}
+	struct train {
+		int train_no;
+		int ticket_no;
+	} record;
+
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = sizeof(struct train);
+	fl.l_pid = getpid();
+
+	printf("Waiting for lock\n");
+
+	fcntl(fd, F_SETLKW, &fl);
+	read(fd, &record, sizeof(record));
+	lseek(fd, -sizeof(record), SEEK_CUR);
+	record.ticket_no++;
+	printf("Ticket number: %d\n", record.ticket_no);
+	write(fd, &record, sizeof(record));
+
+	fl.l_type = F_UNLCK;
+	printf("Press any key to unlock");
+	getchar();
+	fcntl(fd, F_SETLK, &fl);
+
 	return 0;
 }
